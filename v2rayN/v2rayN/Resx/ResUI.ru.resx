@@ -725,7 +725,7 @@
     <value>Интервал автоматического обновления Geo в часах</value>
   </data>
   <data name="LvAutoUpdateInterval" xml:space="preserve">
-    <value>Интервал автоматического обновления в минутах</value>
+    <value>Интервал автоматического обновления (hour)</value>
   </data>
   <data name="TbSettingsCore" xml:space="preserve">
     <value>Ядро: базовые настройки</value>

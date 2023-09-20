@@ -1097,7 +1097,7 @@
     <value>更多地址(url)，用逗号(,)分隔；订阅转换将失效</value>
   </data>
   <data name="LvAutoUpdateInterval" xml:space="preserve">
-    <value>自动更新间隔(分钟)</value>
+    <value>自动更新间隔(hour)</value>
   </data>
   <data name="TbSettingsLogEnabledToFile" xml:space="preserve">
     <value>启用日志存到文件</value>

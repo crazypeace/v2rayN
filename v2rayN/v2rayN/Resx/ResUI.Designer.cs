@@ -367,7 +367,7 @@ namespace v2rayN.Resx {
         }
         
         /// <summary>
-        ///   查找类似 Automatic update interval(minutes) 的本地化字符串。
+        ///   查找类似 Automatic update interval(hour) 的本地化字符串。
         /// </summary>
         public static string LvAutoUpdateInterval {
             get {

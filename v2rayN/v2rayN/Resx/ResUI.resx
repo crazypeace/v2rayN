@@ -1100,7 +1100,7 @@
     <value>{0}:{1}/s↑ | {2}/s↓</value>
   </data>
   <data name="LvAutoUpdateInterval" xml:space="preserve">
-    <value>Automatic update interval(minutes)</value>
+    <value>Automatic update interval(hour)</value>
   </data>
   <data name="TbSettingsLogEnabledToFile" xml:space="preserve">
     <value>Enable logging to file</value>
