@@ -501,10 +501,29 @@ public class AddServerViewModel : MyReactiveObject
 
     private async Task FetchPinSHA256()
     {
-        // DEBUG: test text to verify button -> command -> binding chain
-        CertSha = "TEST_PIN_SHA256_OK";
-        NoticeManager.Instance.Enqueue("DEBUG: wrote test text to CertSha");
-        await Task.CompletedTask;
+        var host = SelectedSource.Address;
+        var port = SelectedSource.Port;
+        if (host.IsNullOrEmpty())
+        {
+            NoticeManager.Instance.Enqueue(ResUI.FillServerAddress);
+            return;
+        }
+        if (port <= 0)
+        {
+            port = 443;
+        }
+
+        NoticeManager.Instance.Enqueue($"正在连接 {host}:{port} 获取证书指纹...");
+        var (pinSha, error) = await CertPemManager.GetQuicPinSHA256Async(host, port);
+        if (error.IsNullOrEmpty())
+        {
+            CertSha = pinSha ?? string.Empty;
+            NoticeManager.Instance.Enqueue($"获取成功: {pinSha}");
+        }
+        else
+        {
+            NoticeManager.Instance.Enqueue($"获取失败: {error}");
+        }
     }
 
     private string GetCurrentTransportHost()
