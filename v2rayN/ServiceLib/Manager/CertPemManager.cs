@@ -468,6 +468,8 @@ public class CertPemManager
             var quicOptions = new QuicClientConnectionOptions
             {
                 RemoteEndPoint = remoteEndpoint,
+                DefaultCloseErrorCode = 0,
+                DefaultStreamErrorCode = 0,
                 ClientAuthenticationOptions = new SslClientAuthenticationOptions
                 {
                     TargetHost = host,
