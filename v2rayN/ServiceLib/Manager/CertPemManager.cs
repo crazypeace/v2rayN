@@ -465,23 +465,26 @@ public class CertPemManager
                 System.Net.Dns.GetHostAddresses(host).First(),
                 port > 0 ? port : 443);
 
-            var sslOptions = new SslClientAuthenticationOptions
+            var quicOptions = new QuicConnectionOptions(remoteEndpoint)
             {
-                TargetHost = host,
-                RemoteCertificateValidationCallback = (_, cert, _, _) =>
+                ClientAuthenticationOptions = new SslClientAuthenticationOptions
                 {
-                    if (cert != null)
+                    TargetHost = host,
+                    RemoteCertificateValidationCallback = (_, cert, _, _) =>
                     {
-                        peerCert = new X509Certificate2(cert);
-                    }
-                    return true;
+                        if (cert != null)
+                        {
+                            peerCert = new X509Certificate2(cert);
+                        }
+                        return true;
+                    },
+                    ApplicationProtocols = [new SslApplicationProtocol("h3")],
                 },
-                ApplicationProtocols = [new SslApplicationProtocol("h3")],
+                DefaultCloseErrorCode = 0,
             };
 
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(timeout));
-            await using var connection = await QuicConnection.ConnectAsync(
-                remoteEndpoint, sslOptions, cancellationToken: cts.Token);
+            await using var connection = await QuicConnection.ConnectAsync(quicOptions, cts.Token);
 
             if (peerCert == null)
             {
