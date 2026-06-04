@@ -464,7 +464,7 @@ public class CertPemManager
                 return (null, $"hy2-pin-tool not found at: {toolPath}");
             }
 
-            var addr = $"{host}:{port > 0 ? port : 443}";
+            var addr = $"{host}:{(port > 0 ? port : 443)}";
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(timeout + 5));
             var result = await CliWrap.Cli.Wrap(toolPath)
                 .WithArguments(addr)
