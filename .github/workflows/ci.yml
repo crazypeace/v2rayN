@@ -16,6 +16,7 @@ jobs:
       Output: "${{ github.workspace }}/win-x64"
       RID: "win-x64"
       Project: "./v2rayN/v2rayN.csproj"
+      DOTNET_NUGET_SIGNATURE_VERIFICATION: "false"
 
     steps:
     - name: Checkout
