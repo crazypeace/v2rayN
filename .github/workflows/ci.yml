@@ -30,6 +30,17 @@ jobs:
       with:
         dotnet-version: '10.0.1xx'
 
+    - name: Setup Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.24'
+
+    - name: Build hy2-pin-tool
+      run: |
+        git clone https://github.com/crazypeace/hysteria2-pinSHA256-tool.git /tmp/hy2-pin-tool
+        cd /tmp/hy2-pin-tool
+        GOOS=windows GOARCH=amd64 go build -o ${{ github.workspace }}/win-x64/bin/hy2-pin-tool.exe .
+
     - name: Build v2rayN
       working-directory: ./v2rayN
       run: dotnet publish $Project -c Release -r $RID -p:SelfContained=true -p:EnableWindowsTargeting=true -o $Output

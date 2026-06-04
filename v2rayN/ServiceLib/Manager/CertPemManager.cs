@@ -1,5 +1,3 @@
-using System.Net.Security;
-using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 
@@ -446,46 +444,43 @@ public class CertPemManager
     }
 
     /// <summary>
-    /// Get pinSHA256 (SHA-256 hash of leaf certificate DER) via TLS connection.
-    /// Uses TCP+TLS with ALPN "h3" to retrieve the server certificate —
-    /// same certificate that QUIC would use. Works on all platforms without
-    /// requiring msquic/libmsquic native libraries.
-    /// Always uses InsecureSkipVerify since this is meant for self-signed certificates.
+    /// Get pinSHA256 (SHA-256 hash of leaf certificate DER) via QUIC connection.
+    /// Delegates to the bundled hy2-pin-tool (Go binary using quic-go library)
+    /// which provides reliable QUIC support across all platforms without
+    /// depending on msquic/libmsquic native libraries.
     /// </summary>
     public static async Task<(string?, string?)> GetQuicPinSHA256Async(string host, int port, int timeout = 10)
     {
         try
         {
-            X509Certificate2? peerCert = null;
+            // Locate hy2-pin-tool executable
+            var appDir = AppDomain.CurrentDomain.BaseDirectory;
+            var toolName = Environment.OSVersion.Platform == PlatformID.Win32NT
+                ? "hy2-pin-tool.exe" : "hy2-pin-tool";
+            var toolPath = Path.Combine(appDir, "bin", toolName);
 
-            using var client = new System.Net.Sockets.TcpClient();
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(timeout));
-            await client.ConnectAsync(host, port > 0 ? port : 443, cts.Token);
-
-            using var stream = client.GetStream();
-            using var ssl = new System.Net.Security.SslStream(stream, false,
-                (_, _, _, _) => true);
-
-            var sslOpts = new SslClientAuthenticationOptions
+            if (!File.Exists(toolPath))
             {
-                TargetHost = host,
-                ApplicationProtocols = [new SslApplicationProtocol("h3")],
-                EnabledSslProtocols = System.Security.Authentication.SslProtocols.Tls13
-                    | System.Security.Authentication.SslProtocols.Tls12,
-            };
-
-            await ssl.AuthenticateAsClientAsync(sslOpts, cts.Token);
-
-            var remoteCert = ssl.RemoteCertificate;
-            if (remoteCert == null)
-            {
-                return (null, "No certificate received");
+                return (null, $"hy2-pin-tool not found at: {toolPath}");
             }
 
-            peerCert = new X509Certificate2(remoteCert);
-            var hash = SHA256.HashData(peerCert.RawData);
-            var pinHex = Convert.ToHexString(hash).ToLowerInvariant();
-            return (pinHex, null);
+            var addr = $"{host}:{port > 0 ? port : 443}";
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(timeout + 5));
+            var result = await CliWrap.Cli.Wrap(toolPath)
+                .WithArguments(addr)
+                .WithValidation(CliWrap.CommandResultValidation.None)
+                .ExecuteAsync(cts.Token);
+
+            var output = result.StandardOutput.ReadToEnd().Trim();
+
+            if (result.ExitCode != 0)
+            {
+                var stderr = result.StandardError.ReadToEnd().Trim();
+                var msg = !string.IsNullOrEmpty(stderr) ? stderr : output;
+                return (null, $"hy2-pin-tool failed: {msg}");
+            }
+
+            return ParsePinFromOutput(output);
         }
         catch (OperationCanceledException)
         {
@@ -495,5 +490,25 @@ public class CertPemManager
         {
             return (null, ex.Message);
         }
+    }
+
+    private static (string?, string?) ParsePinFromOutput(string output)
+    {
+        // Parse "pinSHA256 (hex): <hex>" from tool output
+        foreach (var line in output.Split('\n'))
+        {
+            var trimmed = line.Trim();
+            if (trimmed.Contains("pinSHA256") && trimmed.Contains("(hex)"))
+            {
+                var idx = trimmed.IndexOf(':');
+                if (idx >= 0)
+                {
+                    var hex = trimmed[(idx + 1)..].Trim();
+                    if (!string.IsNullOrEmpty(hex))
+                        return (hex, null);
+                }
+            }
+        }
+        return (null, "Could not parse pinSHA256 from output");
     }
 }
