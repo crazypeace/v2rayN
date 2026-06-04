@@ -1,4 +1,5 @@
 using System.Net.Security;
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 
 namespace ServiceLib.Manager;
@@ -441,5 +442,85 @@ public class CertPemManager
         {
             return string.Empty;
         }
+    }
+
+    /// <summary>
+    /// Get pinSHA256 (SHA-256 hash of leaf certificate DER) via QUIC connection.
+    /// Delegates to the bundled hy2-pin-tool (Go binary using quic-go library)
+    /// which provides reliable QUIC support across all platforms without
+    /// depending on msquic/libmsquic native libraries.
+    /// </summary>
+    public static async Task<(string?, string?)> GetQuicPinSHA256Async(string host, int port, int timeout = 10)
+    {
+        try
+        {
+            // Locate hy2-pin-tool executable
+            var appDir = AppDomain.CurrentDomain.BaseDirectory;
+            var toolName = Environment.OSVersion.Platform == PlatformID.Win32NT
+                ? "hy2-pin-tool.exe" : "hy2-pin-tool";
+            var toolPath = Path.Combine(appDir, "bin", toolName);
+
+            if (!File.Exists(toolPath))
+            {
+                return (null, $"hy2-pin-tool not found at: {toolPath}");
+            }
+
+            var addr = $"{host}:{(port > 0 ? port : 443)}";
+
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(timeout + 5));
+            using var process = new System.Diagnostics.Process
+            {
+                StartInfo = new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = toolPath,
+                    Arguments = addr,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                }
+            };
+
+            process.Start();
+            var stdout = await process.StandardOutput.ReadToEndAsync(cts.Token);
+            var stderr = await process.StandardError.ReadToEndAsync(cts.Token);
+            await process.WaitForExitAsync(cts.Token);
+
+            if (process.ExitCode != 0)
+            {
+                var msg = !string.IsNullOrEmpty(stderr) ? stderr.Trim() : stdout.Trim();
+                return (null, $"hy2-pin-tool failed: {msg}");
+            }
+
+            return ParsePinFromOutput(stdout);
+        }
+        catch (OperationCanceledException)
+        {
+            return (null, $"Connection timeout after {timeout} seconds");
+        }
+        catch (Exception ex)
+        {
+            return (null, ex.Message);
+        }
+    }
+
+    private static (string?, string?) ParsePinFromOutput(string output)
+    {
+        // Parse "pinSHA256 (hex): <hex>" from tool output
+        foreach (var line in output.Split('\n'))
+        {
+            var trimmed = line.Trim();
+            if (trimmed.Contains("pinSHA256") && trimmed.Contains("(hex)"))
+            {
+                var idx = trimmed.IndexOf(':');
+                if (idx >= 0)
+                {
+                    var hex = trimmed[(idx + 1)..].Trim();
+                    if (!string.IsNullOrEmpty(hex))
+                        return (hex, null);
+                }
+            }
+        }
+        return (null, "Could not parse pinSHA256 from output");
     }
 }

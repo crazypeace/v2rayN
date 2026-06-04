@@ -1554,6 +1554,9 @@
   <data name="TbFetchCertChain" xml:space="preserve">
     <value>獲取憑證鏈</value>
   </data>
+  <data name="TbFetchPinSHA256" xml:space="preserve">
+    <value>獲取pinSHA256</value>
+  </data>
   <data name="ServerNameMustBeValidDomain" xml:space="preserve">
     <value>請設定有效的網域名稱</value>
   </data>
