@@ -473,8 +473,8 @@ public class CertPemManager
 
             var result = await CliWrap.Cli.Wrap(toolPath)
                 .WithArguments(addr)
-                .WithStandardCommandPipe(PipeTarget.ToDelegate(stdout.AppendLine))
-                .WithStandardErrorPipe(PipeTarget.ToDelegate(stderr.AppendLine))
+                .WithStandardCommandPipe(CliWrap.PipeTarget.ToDelegate(stdout.AppendLine))
+                .WithStandardErrorPipe(CliWrap.PipeTarget.ToDelegate(stderr.AppendLine))
                 .WithValidation(CliWrap.CommandResultValidation.None)
                 .ExecuteAsync(cts.Token);
 
