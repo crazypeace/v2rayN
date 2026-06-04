@@ -1194,12 +1194,18 @@
                                             IsVisible="False"
                                             Text="{x:Static resx:ResUI.TbAllowInsecureCertFetchTips}"
                                             TextWrapping="Wrap" />
-                                        <TextBlock
-                                            Width="400"
-                                            Margin="{StaticResource Margin4}"
-                                            VerticalAlignment="Center"
-                                            Text="{x:Static resx:ResUI.TbCertSha256Tips}"
-                                            TextWrapping="Wrap" />
+                                        <StackPanel HorizontalAlignment="Left" Orientation="Horizontal">
+                                            <TextBlock
+                                                Width="400"
+                                                Margin="{StaticResource Margin4}"
+                                                VerticalAlignment="Center"
+                                                Text="{x:Static resx:ResUI.TbCertSha256Tips}"
+                                                TextWrapping="Wrap" />
+                                            <Button
+                                                x:Name="btnFetchPinSHA256"
+                                                Margin="{StaticResource Margin4}"
+                                                Content="{x:Static resx:ResUI.TbFetchPinSHA256}" />
+                                        </StackPanel>
                                         <TextBox
                                             x:Name="txtCertSha256Pinning"
                                             Width="400"

@@ -1,4 +1,6 @@
+using System.Net.Quic;
 using System.Net.Security;
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 
 namespace ServiceLib.Manager;
@@ -440,6 +442,63 @@ public class CertPemManager
         catch
         {
             return string.Empty;
+        }
+    }
+
+    /// <summary>
+    /// Get pinSHA256 (SHA-256 hash of leaf certificate DER) via QUIC connection.
+    /// Used for Hysteria2 servers that use QUIC (UDP) instead of TCP+TLS.
+    /// Always uses InsecureSkipVerify since this is meant for self-signed certificates.
+    /// </summary>
+    public static async Task<(string?, string?)> GetQuicPinSHA256Async(string host, int port, int timeout = 10)
+    {
+        try
+        {
+            if (!QuicConnection.IsSupported)
+            {
+                return (null, "QUIC is not supported on this platform");
+            }
+
+            X509Certificate2? peerCert = null;
+
+            var remoteEndpoint = new System.Net.IPEndPoint(
+                System.Net.Dns.GetHostAddresses(host).First(),
+                port > 0 ? port : 443);
+
+            var sslOptions = new SslClientAuthenticationOptions
+            {
+                TargetHost = host,
+                RemoteCertificateValidationCallback = (_, cert, _, _) =>
+                {
+                    if (cert != null)
+                    {
+                        peerCert = new X509Certificate2(cert);
+                    }
+                    return true;
+                },
+                ApplicationProtocols = [new SslApplicationProtocol("h3")],
+            };
+
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(timeout));
+            await using var connection = await QuicConnection.ConnectAsync(
+                remoteEndpoint, sslOptions, cancellationToken: cts.Token);
+
+            if (peerCert == null)
+            {
+                return (null, "No certificate received");
+            }
+
+            var hash = SHA256.HashData(peerCert.RawData);
+            var pinHex = Convert.ToHexString(hash).ToLowerInvariant();
+            return (pinHex, null);
+        }
+        catch (OperationCanceledException)
+        {
+            return (null, $"Connection timeout after {timeout} seconds");
+        }
+        catch (Exception ex)
+        {
+            return (null, ex.Message);
         }
     }
 }

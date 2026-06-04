@@ -224,6 +224,7 @@ public class AddServerViewModel : MyReactiveObject
 
     public ReactiveCommand<Unit, Unit> FetchCertCmd { get; }
     public ReactiveCommand<Unit, Unit> FetchCertChainCmd { get; }
+    public ReactiveCommand<Unit, Unit> FetchPinSHA256Cmd { get; }
     public ReactiveCommand<Unit, Unit> SaveCmd { get; }
 
     public AddServerViewModel(ProfileItem profileItem, Func<EViewAction, object?, Task<bool>>? updateView)
@@ -238,6 +239,10 @@ public class AddServerViewModel : MyReactiveObject
         FetchCertChainCmd = ReactiveCommand.CreateFromTask(async () =>
         {
             await FetchCertChain();
+        });
+        FetchPinSHA256Cmd = ReactiveCommand.CreateFromTask(async () =>
+        {
+            await FetchPinSHA256();
         });
         SaveCmd = ReactiveCommand.CreateFromTask(async () =>
         {
@@ -492,6 +497,32 @@ public class AddServerViewModel : MyReactiveObject
         var (certs, certError) = await CertPemManager.Instance.GetCertChainPemAsync(domain, serverName, allowInsecure: AllowInsecureCertFetch);
         Cert = CertPemManager.ConcatenatePemChain(certs);
         UpdateCertTip(certError);
+    }
+
+    private async Task FetchPinSHA256()
+    {
+        var host = SelectedSource.Address;
+        var port = SelectedSource.Port;
+        if (host.IsNullOrEmpty())
+        {
+            NoticeManager.Instance.Enqueue(ResUI.FillServerAddress);
+            return;
+        }
+        if (port <= 0)
+        {
+            port = 443;
+        }
+
+        var (pinSha, error) = await CertPemManager.GetQuicPinSHA256Async(host, port);
+        if (error.IsNullOrEmpty())
+        {
+            CertSha = pinSha ?? string.Empty;
+            NoticeManager.Instance.Enqueue(ResUI.OperationSuccess);
+        }
+        else
+        {
+            NoticeManager.Instance.Enqueue(error);
+        }
     }
 
     private string GetCurrentTransportHost()

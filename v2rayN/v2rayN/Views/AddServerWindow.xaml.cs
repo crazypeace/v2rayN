@@ -254,6 +254,7 @@ public partial class AddServerWindow
 
             this.BindCommand(ViewModel, vm => vm.FetchCertCmd, v => v.btnFetchCert).DisposeWith(disposables);
             this.BindCommand(ViewModel, vm => vm.FetchCertChainCmd, v => v.btnFetchCertChain).DisposeWith(disposables);
+            this.BindCommand(ViewModel, vm => vm.FetchPinSHA256Cmd, v => v.btnFetchPinSHA256).DisposeWith(disposables);
             this.BindCommand(ViewModel, vm => vm.SaveCmd, v => v.btnSave).DisposeWith(disposables);
         });
 

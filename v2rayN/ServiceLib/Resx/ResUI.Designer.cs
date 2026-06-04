@@ -3069,6 +3069,12 @@ namespace ServiceLib.Resx {
             }
         }
         
+        public static string TbFetchPinSHA256 {
+            get {
+                return ResourceManager.GetString("TbFetchPinSHA256", resourceCulture);
+            }
+        }
+        
         /// <summary>
         ///   查找类似 Finalmask 的本地化字符串。
         /// </summary>
