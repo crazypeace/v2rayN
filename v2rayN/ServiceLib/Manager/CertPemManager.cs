@@ -467,17 +467,23 @@ public class CertPemManager
 
             var addr = $"{host}:{(port > 0 ? port : 443)}";
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(timeout + 5));
+
+            var stdout = new System.Text.StringBuilder();
+            var stderr = new System.Text.StringBuilder();
+
             var result = await CliWrap.Cli.Wrap(toolPath)
                 .WithArguments(addr)
+                .WithStandardCommandPipe(PipeTarget.ToDelegate(stdout.AppendLine))
+                .WithStandardErrorPipe(PipeTarget.ToDelegate(stderr.AppendLine))
                 .WithValidation(CliWrap.CommandResultValidation.None)
                 .ExecuteAsync(cts.Token);
 
-            var output = result.StandardOutput.ReadToEnd().Trim();
+            var output = stdout.ToString().Trim();
 
             if (result.ExitCode != 0)
             {
-                var stderr = result.StandardError.ReadToEnd().Trim();
-                var msg = !string.IsNullOrEmpty(stderr) ? stderr : output;
+                var err = stderr.ToString().Trim();
+                var msg = !string.IsNullOrEmpty(err) ? err : output;
                 return (null, $"hy2-pin-tool failed: {msg}");
             }
 
