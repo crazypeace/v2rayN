@@ -36,6 +36,7 @@ jobs:
           )
         }}
       Project: ${{ inputs.project }}
+      DOTNET_NUGET_SIGNATURE_VERIFICATION: "false"
       ExtOpt: |-
         ${{
           case(
