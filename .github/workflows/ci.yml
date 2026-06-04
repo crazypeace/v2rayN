@@ -1,0 +1,40 @@
+name: CI build
+
+on:
+  push:
+    branches: [ feat-fetch-pin-sha256 ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: build windows x64
+    runs-on: ubuntu-latest
+    env:
+      Output: "${{ github.workspace }}/win-x64"
+      RID: "win-x64"
+      Project: "./v2rayN/v2rayN.csproj"
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v6
+      with:
+        submodules: 'recursive'
+        fetch-depth: '0'
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v5.3.0
+      with:
+        dotnet-version: '10.0.1xx'
+
+    - name: Build v2rayN
+      working-directory: ./v2rayN
+      run: dotnet publish $Project -c Release -r $RID -p:SelfContained=true -p:EnableWindowsTargeting=true -o $Output
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v7.0.1
+      with:
+        name: win-x64
+        path: win-x64
