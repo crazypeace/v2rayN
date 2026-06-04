@@ -64,6 +64,26 @@ jobs:
       working-directory: ./v2rayN
       run: dotnet publish ./AmazTool/AmazTool.csproj -c Release -r $RID -p:SelfContained=true -p:PublishTrimmed=true $ExtOpt -o $Output
 
+    - name: Download hy2-pin-tool
+      run: |
+        mkdir -p $Output/bin
+        TAG=$(curl -fsSL https://api.github.com/repos/crazypeace/hysteria2-pinSHA256-tool/releases/latest | python3 -c "import sys,json; print(json.load(sys.stdin)['tag_name'])")
+        echo "Latest hy2-pin-tool release: $TAG"
+        # Map .NET RID to Go binary name
+        case "$RID" in
+          win-x64)    GO_FILE="hy2-pin-tool-windows-amd64.exe" ;;
+          win-arm64)  GO_FILE="hy2-pin-tool-windows-arm64.exe" ;;
+          linux-x64)  GO_FILE="hy2-pin-tool-linux-amd64" ;;
+          linux-arm64) GO_FILE="hy2-pin-tool-linux-arm64" ;;
+          osx-x64)    GO_FILE="hy2-pin-tool-darwin-amd64" ;;
+          osx-arm64)  GO_FILE="hy2-pin-tool-darwin-arm64" ;;
+          *)          echo "Unknown RID: $RID, skipping hy2-pin-tool"; exit 0 ;;
+        esac
+        curl -fsSL -o "$Output/bin/hy2-pin-tool" \
+          "https://github.com/crazypeace/hysteria2-pinSHA256-tool/releases/download/${TAG}/${GO_FILE}"
+        chmod +x "$Output/bin/hy2-pin-tool"
+        ls -lh $Output/bin/
+
     - name: Upload build artifacts
       uses: actions/upload-artifact@v7.0.1
       with:

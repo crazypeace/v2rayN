@@ -9,42 +9,18 @@ permissions:
   contents: read
 
 jobs:
-  build:
-    name: build windows x64
-    runs-on: ubuntu-latest
-    env:
-      Output: "${{ github.workspace }}/win-x64"
-      RID: "win-x64"
-      Project: "./v2rayN/v2rayN.csproj"
-      DOTNET_NUGET_SIGNATURE_VERIFICATION: "false"
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v6
-      with:
-        submodules: 'recursive'
-        fetch-depth: '0'
+  build-windows:
+    uses: ./.github/workflows/build.yml
+    with:
+      target: windows
+      project: ./v2rayN/v2rayN.csproj
 
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v5.3.0
-      with:
-        dotnet-version: '10.0.1xx'
+  build-linux:
+    uses: ./.github/workflows/build.yml
+    with:
+      target: linux
 
-    - name: Build v2rayN
-      working-directory: ./v2rayN
-      run: dotnet publish $Project -c Release -r $RID -p:SelfContained=true -p:EnableWindowsTargeting=true -o $Output
-
-    - name: Download hy2-pin-tool
-      run: |
-        mkdir -p $Output/bin
-        TAG=$(curl -fsSL https://api.github.com/repos/crazypeace/hysteria2-pinSHA256-tool/releases/latest | python3 -c "import sys,json; print(json.load(sys.stdin)['tag_name'])")
-        echo "Latest hy2-pin-tool release: $TAG"
-        curl -fsSL -o $Output/bin/hy2-pin-tool.exe \
-          "https://github.com/crazypeace/hysteria2-pinSHA256-tool/releases/download/${TAG}/hy2-pin-tool-windows-amd64.exe"
-        chmod +x $Output/bin/hy2-pin-tool.exe
-        ls -lh $Output/bin/
-
-    - name: Upload build artifacts
-      uses: actions/upload-artifact@v7.0.1
-      with:
-        name: win-x64
-        path: win-x64
+  build-osx:
+    uses: ./.github/workflows/build.yml
+    with:
+      target: macos
