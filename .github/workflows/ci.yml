@@ -32,7 +32,7 @@ jobs:
 
     - name: Build v2rayN
       working-directory: ./v2rayN
-      run: dotnet publish $Project -c Release -r $RID -p:SelfContained=true -p:EnableWindowsTargeting=true -p:PublishSingleFile=false -o $Output
+      run: dotnet publish $Project -c Release -r $RID -p:SelfContained=true -p:EnableWindowsTargeting=true -o $Output
 
     - name: Upload build artifacts
       uses: actions/upload-artifact@v7.0.1

@@ -1,5 +1,5 @@
-using System.Net.Quic;
 using System.Net.Security;
+using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 
@@ -446,53 +446,43 @@ public class CertPemManager
     }
 
     /// <summary>
-    /// Get pinSHA256 (SHA-256 hash of leaf certificate DER) via QUIC connection.
-    /// Used for Hysteria2 servers that use QUIC (UDP) instead of TCP+TLS.
+    /// Get pinSHA256 (SHA-256 hash of leaf certificate DER) via TLS connection.
+    /// Uses TCP+TLS with ALPN "h3" to retrieve the server certificate —
+    /// same certificate that QUIC would use. Works on all platforms without
+    /// requiring msquic/libmsquic native libraries.
     /// Always uses InsecureSkipVerify since this is meant for self-signed certificates.
     /// </summary>
     public static async Task<(string?, string?)> GetQuicPinSHA256Async(string host, int port, int timeout = 10)
     {
         try
         {
-            if (!QuicConnection.IsSupported)
-            {
-                return (null, "QUIC is not supported on this platform");
-            }
-
             X509Certificate2? peerCert = null;
 
-            var remoteEndpoint = new System.Net.IPEndPoint(
-                System.Net.Dns.GetHostAddresses(host).First(),
-                port > 0 ? port : 443);
+            using var client = new System.Net.Sockets.TcpClient();
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(timeout));
+            await client.ConnectAsync(host, port > 0 ? port : 443, cts.Token);
 
-            var quicOptions = new QuicClientConnectionOptions
+            using var stream = client.GetStream();
+            using var ssl = new System.Net.Security.SslStream(stream, false,
+                (_, _, _, _) => true);
+
+            var sslOpts = new SslClientAuthenticationOptions
             {
-                RemoteEndPoint = remoteEndpoint,
-                DefaultCloseErrorCode = 0,
-                DefaultStreamErrorCode = 0,
-                ClientAuthenticationOptions = new SslClientAuthenticationOptions
-                {
-                    TargetHost = host,
-                    RemoteCertificateValidationCallback = (_, cert, _, _) =>
-                    {
-                        if (cert != null)
-                        {
-                            peerCert = new X509Certificate2(cert);
-                        }
-                        return true;
-                    },
-                    ApplicationProtocols = [new SslApplicationProtocol("h3")],
-                },
+                TargetHost = host,
+                ApplicationProtocols = [new SslApplicationProtocol("h3")],
+                EnabledSslProtocols = System.Security.Authentication.SslProtocols.Tls13
+                    | System.Security.Authentication.SslProtocols.Tls12,
             };
 
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(timeout));
-            await using var connection = await QuicConnection.ConnectAsync(quicOptions, cts.Token);
+            await ssl.AuthenticateAsClientAsync(sslOpts, cts.Token);
 
-            if (peerCert == null)
+            var remoteCert = ssl.RemoteCertificate;
+            if (remoteCert == null)
             {
                 return (null, "No certificate received");
             }
 
+            peerCert = new X509Certificate2(remoteCert);
             var hash = SHA256.HashData(peerCert.RawData);
             var pinHex = Convert.ToHexString(hash).ToLowerInvariant();
             return (pinHex, null);
