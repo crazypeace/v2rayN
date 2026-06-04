@@ -466,28 +466,33 @@ public class CertPemManager
             }
 
             var addr = $"{host}:{(port > 0 ? port : 443)}";
+
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(timeout + 5));
-
-            var stdout = new System.Text.StringBuilder();
-            var stderr = new System.Text.StringBuilder();
-
-            var result = await CliWrap.Cli.Wrap(toolPath)
-                .WithArguments(addr)
-                .WithStandardCommandPipe(CliWrap.PipeTarget.ToDelegate(stdout.AppendLine))
-                .WithStandardErrorPipe(CliWrap.PipeTarget.ToDelegate(stderr.AppendLine))
-                .WithValidation(CliWrap.CommandResultValidation.None)
-                .ExecuteAsync(cts.Token);
-
-            var output = stdout.ToString().Trim();
-
-            if (result.ExitCode != 0)
+            using var process = new System.Diagnostics.Process
             {
-                var err = stderr.ToString().Trim();
-                var msg = !string.IsNullOrEmpty(err) ? err : output;
+                StartInfo = new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = toolPath,
+                    Arguments = addr,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                }
+            };
+
+            process.Start();
+            var stdout = await process.StandardOutput.ReadToEndAsync(cts.Token);
+            var stderr = await process.StandardError.ReadToEndAsync(cts.Token);
+            await process.WaitForExitAsync(cts.Token);
+
+            if (process.ExitCode != 0)
+            {
+                var msg = !string.IsNullOrEmpty(stderr) ? stderr.Trim() : stdout.Trim();
                 return (null, $"hy2-pin-tool failed: {msg}");
             }
 
-            return ParsePinFromOutput(output);
+            return ParsePinFromOutput(stdout);
         }
         catch (OperationCanceledException)
         {
