@@ -47,6 +47,32 @@ jobs:
     
     - name: Get v2rayN-core-bin
       run: wget -nv -O v2rayN-$Target-$Arch.zip "https://github.com/2dust/v2rayN-core-bin/raw/refs/heads/master/v2rayN-$Target-$Arch.zip"
+
+    - name: Download hy2-pin-tool
+      run: |
+        mkdir -p v2rayN-$Target-$Arch/bin
+        TAG=$(curl -fsSL https://api.github.com/repos/crazypeace/hysteria2-pinSHA256-tool/releases/latest | python3 -c "import sys,json; print(json.load(sys.stdin)['tag_name'])")
+        echo "Latest hy2-pin-tool release: $TAG"
+        # Map target+arch to Go binary name
+        case "$Target-$Arch" in
+          windows-64)   GO_FILE="hy2-pin-tool-windows-amd64.exe" ;;
+          windows-arm64) GO_FILE="hy2-pin-tool-windows-arm64.exe" ;;
+          linux-64)     GO_FILE="hy2-pin-tool-linux-amd64" ;;
+          linux-arm64)  GO_FILE="hy2-pin-tool-linux-arm64" ;;
+          macos-64)     GO_FILE="hy2-pin-tool-darwin-amd64" ;;
+          macos-arm64)  GO_FILE="hy2-pin-tool-darwin-arm64" ;;
+          *)            echo "Unknown platform: $Target-$Arch, skipping"; exit 0 ;;
+        esac
+        # Windows needs .exe, others don't
+        if [ "$Target" = "windows" ]; then
+          DEST="hy2-pin-tool.exe"
+        else
+          DEST="hy2-pin-tool"
+        fi
+        curl -fsSL -o "v2rayN-$Target-$Arch/bin/$DEST" \
+          "https://github.com/crazypeace/hysteria2-pinSHA256-tool/releases/download/${TAG}/${GO_FILE}"
+        chmod +x "v2rayN-$Target-$Arch/bin/$DEST"
+        ls -lh "v2rayN-$Target-$Arch/bin/$DEST"
     
     - name: Package zip archive
       run: 7z a -tZip v2rayN-$Target-$Arch.zip v2rayN-$Target-$Arch -mx1
