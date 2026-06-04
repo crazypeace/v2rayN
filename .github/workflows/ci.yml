@@ -17,7 +17,6 @@ jobs:
       RID: "win-x64"
       Project: "./v2rayN/v2rayN.csproj"
       DOTNET_NUGET_SIGNATURE_VERIFICATION: "false"
-
     steps:
     - name: Checkout
       uses: actions/checkout@v6
@@ -34,16 +33,15 @@ jobs:
       working-directory: ./v2rayN
       run: dotnet publish $Project -c Release -r $RID -p:SelfContained=true -p:EnableWindowsTargeting=true -o $Output
 
-    - name: Setup Go
-      uses: actions/setup-go@v5
-      with:
-        go-version: '1.24'
-
-    - name: Build and install hy2-pin-tool
+    - name: Download hy2-pin-tool
       run: |
-        git clone https://github.com/crazypeace/hysteria2-pinSHA256-tool.git /tmp/hy2-pin-tool
-        cd /tmp/hy2-pin-tool
-        GOOS=windows GOARCH=amd64 go build -o ${{ github.workspace }}/win-x64/bin/hy2-pin-tool.exe .
+        mkdir -p $Output/bin
+        TAG=$(curl -fsSL https://api.github.com/repos/crazypeace/hysteria2-pinSHA256-tool/releases/latest | python3 -c "import sys,json; print(json.load(sys.stdin)['tag_name'])")
+        echo "Latest hy2-pin-tool release: $TAG"
+        curl -fsSL -o $Output/bin/hy2-pin-tool.exe \
+          "https://github.com/crazypeace/hysteria2-pinSHA256-tool/releases/download/${TAG}/hy2-pin-tool-windows-amd64.exe"
+        chmod +x $Output/bin/hy2-pin-tool.exe
+        ls -lh $Output/bin/
 
     - name: Upload build artifacts
       uses: actions/upload-artifact@v7.0.1
