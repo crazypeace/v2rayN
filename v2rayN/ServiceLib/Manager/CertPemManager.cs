@@ -465,8 +465,9 @@ public class CertPemManager
                 System.Net.Dns.GetHostAddresses(host).First(),
                 port > 0 ? port : 443);
 
-            var quicOptions = new QuicConnectionOptions(remoteEndpoint)
+            var quicOptions = new QuicClientConnectionOptions
             {
+                RemoteEndPoint = remoteEndpoint,
                 ClientAuthenticationOptions = new SslClientAuthenticationOptions
                 {
                     TargetHost = host,
@@ -480,7 +481,6 @@ public class CertPemManager
                     },
                     ApplicationProtocols = [new SslApplicationProtocol("h3")],
                 },
-                DefaultCloseErrorCode = 0,
             };
 
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(timeout));
