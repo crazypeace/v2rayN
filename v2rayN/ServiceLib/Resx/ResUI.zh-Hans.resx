@@ -486,6 +486,9 @@
   <data name="menuRemoveServer" xml:space="preserve">
     <value>移除所选 (多选)</value>
   </data>
+  <data name="menuFetchPinSHA256" xml:space="preserve">
+    <value>获取pinSHA256</value>
+  </data>
   <data name="menuSetDefaultServer" xml:space="preserve">
     <value>设为活动</value>
   </data>
@@ -1556,6 +1559,9 @@
   </data>
   <data name="TbFetchPinSHA256" xml:space="preserve">
     <value>获取pinSHA256</value>
+  </data>
+  <data name="BatchFetchPinSHA256Result" xml:space="preserve">
+    <value>获取pinSHA256完成: 成功{0}, 跳过{1}, 失败{2}</value>
   </data>
   <data name="ServerNameMustBeValidDomain" xml:space="preserve">
     <value>请设置有效的域名</value>

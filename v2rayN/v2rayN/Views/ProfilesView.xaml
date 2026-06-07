@@ -121,6 +121,11 @@
                 <DataGrid.ContextMenu>
                     <ContextMenu Style="{StaticResource DefContextMenu}">
                         <MenuItem
+                            x:Name="menuFetchPinSHA256"
+                            Height="{StaticResource MenuItemHeight}"
+                            Header="{x:Static resx:ResUI.menuFetchPinSHA256}" />
+                        <Separator />
+                        <MenuItem
                             x:Name="menuSetDefaultServer"
                             Height="{StaticResource MenuItemHeight}"
                             Header="{x:Static resx:ResUI.menuSetDefaultServer}"

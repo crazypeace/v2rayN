@@ -1,26 +1,41 @@
-name: CI build
+name: ci
 
 on:
   push:
-    branches: [ feat-fetch-pin-sha256 ]
-  workflow_dispatch:
+    branches:
+      - feat-pin-sha256
 
-permissions:
-  contents: read
+env:
+  DOTNET_NUGET_SIGNATURE_VERIFICATION: false
 
 jobs:
-  build-windows:
-    uses: ./.github/workflows/build.yml
-    with:
-      target: windows
-      project: ./v2rayN/v2rayN.csproj
+  build-win-x64:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+          fetch-depth: '0'
 
-  build-linux:
-    uses: ./.github/workflows/build.yml
-    with:
-      target: linux
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
 
-  build-osx:
-    uses: ./.github/workflows/build.yml
-    with:
-      target: macos
+      - name: Build WPF
+        run: dotnet publish v2rayN/v2rayN/v2rayN.csproj -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -o artifacts/wpf
+
+      - name: Build Avalonia
+        run: dotnet publish v2rayN/v2rayN.Desktop/v2rayN.Desktop.csproj -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -o artifacts/desktop
+
+      - name: Upload WPF
+        uses: actions/upload-artifact@v4
+        with:
+          name: v2rayN-wpf-win-x64
+          path: artifacts/wpf/
+
+      - name: Upload Avalonia
+        uses: actions/upload-artifact@v4
+        with:
+          name: v2rayN-desktop-win-x64
+          path: artifacts/desktop/
