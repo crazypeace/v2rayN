@@ -1,0 +1,38 @@
+name: ci
+
+on:
+  push:
+    branches:
+      - feat-pin-sha256
+
+env:
+  DOTNET_NUGET_SIGNATURE_VERIFICATION: false
+
+jobs:
+  build-win-x64:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Build WPF
+        run: dotnet publish v2rayN/v2rayN/v2rayN.csproj -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -o artifacts/wpf
+
+      - name: Build Avalonia
+        run: dotnet publish v2rayN/v2rayN.Desktop/v2rayN.Desktop.csproj -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -o artifacts/desktop
+
+      - name: Upload WPF
+        uses: actions/upload-artifact@v4
+        with:
+          name: v2rayN-wpf-win-x64
+          path: artifacts/wpf/
+
+      - name: Upload Avalonia
+        uses: actions/upload-artifact@v4
+        with:
+          name: v2rayN-desktop-win-x64
+          path: artifacts/desktop/
