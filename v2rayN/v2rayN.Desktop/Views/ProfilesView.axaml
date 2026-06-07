@@ -113,6 +113,10 @@
                 <DataGrid.ContextMenu>
                     <ContextMenu>
                         <MenuItem
+                            x:Name="menuFetchPinSHA256"
+                            Header="{x:Static resx:ResUI.menuFetchPinSHA256}" />
+                        <Separator />
+                        <MenuItem
                             x:Name="menuSetDefaultServer"
                             Header="{x:Static resx:ResUI.menuSetDefaultServer}"
                             InputGesture="Enter" />

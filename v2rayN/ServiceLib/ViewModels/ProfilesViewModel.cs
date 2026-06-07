@@ -78,6 +78,9 @@ public class ProfilesViewModel : MyReactiveObject
     public ReactiveCommand<Unit, Unit> EditSubCmd { get; }
     public ReactiveCommand<Unit, Unit> DeleteSubCmd { get; }
 
+    //servers pinSHA256
+    public ReactiveCommand<Unit, Unit> FetchPinSHA256Cmd { get; }
+
     #endregion Menu
 
     #region Init
@@ -231,6 +234,12 @@ public class ProfilesViewModel : MyReactiveObject
         {
             await DeleteSubAsync();
         });
+
+        //servers pinSHA256
+        FetchPinSHA256Cmd = ReactiveCommand.CreateFromTask(async () =>
+        {
+            await FetchPinSHA256Batch();
+        }, canEditRemove);
 
         #endregion WhenAnyValue && ReactiveCommand
 
@@ -759,6 +768,66 @@ public class ProfilesViewModel : MyReactiveObject
     public void ServerSpeedtestStop()
     {
         _speedtestService?.ExitLoop();
+    }
+
+    private async Task FetchPinSHA256Batch()
+    {
+        var lstSelected = await GetProfileItems(true);
+        if (lstSelected is null || lstSelected.Count <= 0)
+        {
+            NoticeManager.Instance.Enqueue(ResUI.PleaseSelectServer);
+            return;
+        }
+
+        var successCount = 0;
+        var skipCount = 0;
+        var failCount = 0;
+
+        foreach (var item in lstSelected)
+        {
+            // Condition 1: must be TLS-based protocol
+            if (item.StreamSecurity != Global.StreamSecurity)
+            {
+                skipCount++;
+                continue;
+            }
+
+            // Condition 2: AllowInsecure must be "true"
+            if (item.AllowInsecure != Global.AllowInsecure.First())
+            {
+                skipCount++;
+                continue;
+            }
+
+            // Condition 3: skip if already has pinSHA256
+            if (item.CertSha.IsNotEmpty())
+            {
+                skipCount++;
+                continue;
+            }
+
+            var host = item.Address;
+            var port = item.Port > 0 ? item.Port : 443;
+
+            NoticeManager.Instance.Enqueue($"[{item.Remarks}] Connecting {host}:{port} ...");
+            var (pinSha, error) = await CertPemManager.GetQuicPinSHA256Async(host, port);
+
+            if (error.IsNotEmpty())
+            {
+                NoticeManager.Instance.Enqueue($"[{item.Remarks}] Failed: {error}");
+                failCount++;
+                continue;
+            }
+
+            // Save pinSHA256 to profile
+            item.CertSha = pinSha ?? string.Empty;
+            await ConfigHandler.AddServer(_config, item);
+            successCount++;
+            NoticeManager.Instance.Enqueue($"[{item.Remarks}] pinSHA256: {pinSha}");
+        }
+
+        NoticeManager.Instance.Enqueue(string.Format(ResUI.BatchFetchPinSHA256Result, successCount, skipCount, failCount));
+        await RefreshServers();
     }
 
     private async Task Export2ClientConfigAsync(bool blClipboard)

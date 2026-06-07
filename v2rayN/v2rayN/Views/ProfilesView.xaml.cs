@@ -48,6 +48,9 @@ public partial class ProfilesView
             this.BindCommand(ViewModel, vm => vm.AddSubCmd, v => v.btnAddSub).DisposeWith(disposables);
             this.BindCommand(ViewModel, vm => vm.EditSubCmd, v => v.btnEditSub).DisposeWith(disposables);
 
+            //servers pinSHA256
+            this.BindCommand(ViewModel, vm => vm.FetchPinSHA256Cmd, v => v.menuFetchPinSHA256).DisposeWith(disposables);
+
             //servers delete
             this.BindCommand(ViewModel, vm => vm.EditServerCmd, v => v.menuEditServer).DisposeWith(disposables);
             this.BindCommand(ViewModel, vm => vm.RemoveServerCmd, v => v.menuRemoveServer).DisposeWith(disposables);

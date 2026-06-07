@@ -1690,6 +1690,15 @@ namespace ServiceLib.Resx {
         }
         
         /// <summary>
+        ///   查找类似 Fetch pinSHA256 的本地化字符串。
+        /// </summary>
+        public static string menuFetchPinSHA256 {
+            get {
+                return ResourceManager.GetString("menuFetchPinSHA256", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Set as active 的本地化字符串。
         /// </summary>
         public static string menuSetDefaultServer {
@@ -3072,6 +3081,15 @@ namespace ServiceLib.Resx {
         public static string TbFetchPinSHA256 {
             get {
                 return ResourceManager.GetString("TbFetchPinSHA256", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Fetch pinSHA256 done: {0} success, {1} skipped, {2} failed 的本地化字符串。
+        /// </summary>
+        public static string BatchFetchPinSHA256Result {
+            get {
+                return ResourceManager.GetString("BatchFetchPinSHA256Result", resourceCulture);
             }
         }
         
